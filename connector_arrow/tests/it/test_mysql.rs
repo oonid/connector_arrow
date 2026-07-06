@@ -67,6 +67,8 @@ fn roundtrip(#[case] table_name: &str, #[case] spec: spec::ArrowGenSpec) {
 #[case::strings(literals_cases::strings())]
 #[case::decimals(literals_cases::decimals())]
 #[case::timestamp(literals_cases::timestamp())]
+#[case::date(literals_cases::date())]
+#[case::varbinary(literals_cases::varbinary())]
 fn query_literals(#[case] queries: Vec<QueryOfSingleLiteral>) {
     let mut conn = init();
     crate::util::query_literals(&mut conn, queries)
@@ -104,5 +106,27 @@ mod literals_cases {
                 value: Box::new("2024-02-23T15:18:36.000000".to_string()),
             },
         ]
+    }
+
+    pub fn date() -> Vec<QueryOfSingleLiteral> {
+        // DATE values arrive over the wire as Value::Date with a zero time part,
+        // rendered by the Utf8 producer in the same fixed-width format as DATETIME.
+        vec![QueryOfSingleLiteral {
+            db_ty: "DATE".into(),
+            value_sql: "DATE'2024-02-23'".into(),
+            inject_sql_cast: false,
+            value: Box::new("2024-02-23T00:00:00.000000".to_string()),
+        }]
+    }
+
+    pub fn varbinary() -> Vec<QueryOfSingleLiteral> {
+        // A bare hex literal is sent as MYSQL_TYPE_VAR_STRING with the BINARY flag,
+        // which get_name_of_column_type reports as "varbinary".
+        vec![QueryOfSingleLiteral {
+            db_ty: "VARBINARY".into(),
+            value_sql: "x'DEADBEEF'".into(),
+            inject_sql_cast: false,
+            value: Box::new(vec![0xDEu8, 0xAD, 0xBE, 0xEF]),
+        }]
     }
 }
