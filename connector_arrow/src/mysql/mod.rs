@@ -71,18 +71,19 @@ impl<Q: Queryable> Connector for MySQLConnection<Q> {
 
             ("tinyint" | "bool" | "boolean", false) => DataType::Int8,
             ("smallint", false) => DataType::Int16,
-            ("integer" | "int", false) => DataType::Int32,
+            // MEDIUMINT is a 24-bit integer; it fits Int32/UInt32.
+            ("integer" | "int" | "mediumint", false) => DataType::Int32,
             ("bigint", false) => DataType::Int64,
 
             ("tinyint", true) => DataType::UInt8,
             ("smallint", true) => DataType::UInt16,
-            ("integer" | "int", true) => DataType::UInt32,
+            ("integer" | "int" | "mediumint", true) => DataType::UInt32,
             ("bigint", true) => DataType::UInt64,
 
             ("real" | "float" | "float4", _) => DataType::Float32,
             ("double" | "float8", _) => DataType::Float64,
 
-            ("bit" | "tinyblob" | "mediumblob" | "longblob" | "blob" | "binary", _) => {
+            ("bit" | "tinyblob" | "mediumblob" | "longblob" | "blob" | "binary" | "varbinary", _) => {
                 DataType::Binary
             }
 
@@ -91,6 +92,11 @@ impl<Q: Queryable> Connector for MySQLConnection<Q> {
             }
 
             ("decimal" | "numeric" | "newdecimal", _) => DataType::Utf8,
+
+            // MySQL (8.0+) sends JSON columns as MYSQL_TYPE_JSON; values arrive as
+            // Value::Bytes containing the JSON text, so Utf8 is the natural mapping.
+            // (MariaDB aliases JSON to LONGTEXT, which is covered by the text arm above.)
+            ("json", _) => DataType::Utf8,
 
             // MySQL DATETIME has range 1000-01-01 00:00:00.000000 and
             // 9999-12-31 23:59:59.999999 with microsecond precision.
@@ -101,7 +107,7 @@ impl<Q: Queryable> Connector for MySQLConnection<Q> {
             // So we default to Utf8.
             // TODO: if we send `SET timezone = 'UTC'` before executing queries, we could convert
             // to timestamp in 'UTC' timezone.
-            ("datetime" | "timestamp", _) => DataType::Utf8,
+            ("date" | "datetime" | "timestamp", _) => DataType::Utf8,
 
             _ => return None,
         })
