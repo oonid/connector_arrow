@@ -70,6 +70,10 @@ pub mod postgres;
 pub mod rusqlite;
 #[cfg(feature = "src_tiberius")]
 pub mod tiberius;
+#[cfg(feature = "src_sqlx_postgres")]
+pub mod api_async;
+#[cfg(feature = "src_sqlx_postgres")]
+pub mod sqlx_postgres;
 
 pub use arrow;
 pub use errors::*;

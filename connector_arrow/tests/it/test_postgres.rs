@@ -3,10 +3,26 @@ use rstest::rstest;
 
 use crate::{spec, util::QueryOfSingleLiteral};
 
+async fn get_db_url() -> String {
+    if let Ok(url) = std::env::var("POSTGRES_URL") {
+        return url;
+    }
+    
+    static DB_URL: tokio::sync::OnceCell<String> = tokio::sync::OnceCell::const_new();
+    DB_URL.get_or_init(|| async {
+        let mut config = postg::config::Config::default();
+        config.temporary = true;
+        let db = postg::engine::Postg::start(config).await.unwrap();
+        let url = db.connection_string();
+        Box::leak(Box::new(db)); // Leak to keep DB alive for the duration of tests
+        url
+    }).await.clone()
+}
+
 fn init() -> PostgresConnection {
     let _ = env_logger::builder().is_test(true).try_init();
 
-    let dburl = std::env::var("POSTGRES_URL").unwrap();
+    let dburl = tokio::runtime::Runtime::new().unwrap().block_on(get_db_url());
     let client = postgres::Client::connect(&dburl, postgres::NoTls).unwrap();
     PostgresConnection::new(client)
 }

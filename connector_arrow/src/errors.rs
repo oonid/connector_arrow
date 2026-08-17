@@ -58,6 +58,10 @@ pub enum ConnectorError {
     #[cfg(feature = "src_tiberius")]
     #[error(transparent)]
     Tiberius(#[from] tiberius::error::Error),
+
+    #[cfg(feature = "src_sqlx_postgres")]
+    #[error(transparent)]
+    SqlxPostgres(#[from] super::sqlx_postgres::SqlxPostgresError),
 }
 
 #[derive(Error, Debug)]

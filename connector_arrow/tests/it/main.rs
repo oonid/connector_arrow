@@ -13,3 +13,8 @@ mod test_postgres;
 mod test_sqlite;
 #[cfg(feature = "src_tiberius")]
 mod test_tiberius;
+
+#[cfg(feature = "src_sqlx_postgres")]
+mod tests_async;
+#[cfg(feature = "src_sqlx_postgres")]
+mod test_sqlx_postgres;
